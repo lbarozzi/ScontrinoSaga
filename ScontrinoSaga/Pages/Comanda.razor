@@ -7,7 +7,7 @@
 <h1>@(DateTime.Now.ToShortDateString() ): Comanda</h1>
 
 @if (Products != null ) {
-    <h3>Products</h3>
+    <h3>Prodotti</h3>
     @foreach (var p in Products){
         <div class="card">
             <div class="card-body">
@@ -37,7 +37,7 @@
 
 <hr />
 
-<button class="btn btn-primary" @onclick="SubTotal">SubTotal</button>
+<button class="btn btn-primary" @onclick="SubTotal">Conferma Ordine</button>
 
 @code {
     private int subTotal = 0;
