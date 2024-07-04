@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Sqlite;
 using Microsoft.AspNetCore.Components.Web;
 using ScontrinoSaga.Data;
 
@@ -8,6 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
+
+builder.Services.AddDbContext<AppDBContext>(opt=>opt.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 var app = builder.Build();
 
