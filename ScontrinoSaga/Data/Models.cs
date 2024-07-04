@@ -26,7 +26,7 @@ namespace ScontrinoSaga.Data {
         public Invoice ParentInvoice { get; set; }
         public Product InvoiceRowProduct { get; set; }
         public int InvoiceRowQuantity { get; set; }
-        public int InvoiceRowPrice { get; set; }
+        public double InvoiceRowPrice { get; set; }
 
     }
 

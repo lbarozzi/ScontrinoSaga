@@ -12,29 +12,34 @@
         <div class="card">
             <div class="card-body">
                <button class="btn btn-primary" @onclick="(args)=> AddProduct(args, p.ProductID)">AddProduct: @p.ProductDescription</button>
+                <button class="btn btn-danger" @onclick="(args)=> SubProduct(args, p.ProductID)">SubProduct: @p.ProductDescription</button>
             </div>
         </div>
     } 
 }
+<hr />
 
 @if (Order != null ) {
     <h3>Order</h3>
     @foreach (var p in Order){
-        @p
+        <div class="card">
+            <div class="card-header">
+                @p.InvoiceRowQuantity X @p.InvoiceRowProduct.ProductDescription @p.InvoiceRowProduct.ProductPrice &euro;
+            </div>
+            <!--
+            <div class="card-body justify-content-end">
+                @p.InvoiceRowPrice &euro;
+            </div>
+            -->
+        </div>
     }
 }
 
-
-
+<hr />
 
 <button class="btn btn-primary" @onclick="SubTotal">SubTotal</button>
 
-<p role="status">Current count: @currentCount</p>
-
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
-
 @code {
-    private int currentCount = 0;
     private int subTotal = 0;
     private AppDBContext _context;
     private IEnumerable<Product> Products;
@@ -57,26 +62,53 @@
 
             Order.Append(tmp);
         }
-        currentCount = 0;
+        //currentCount = 0;
 
     }
 
     private void AddProduct(MouseEventArgs e,int ProductID) {
-        _context = DbFactory.CreateDbContext();
+        //_context = DbFactory.CreateDbContext();
         var Product = _context.Products
                 .Find(ProductID);
 
-       
-        this.Order.Add(new InvoiceRow() {
-                InvoiceRowQuantity = 1,
-            InvoiceRowProduct = Product
-        });
+        var curRow = Order
+                    .Where(ord => ord.InvoiceRowProduct == Product)
+                    .FirstOrDefault();
+
+        if (curRow == null){
+            this.Order.Add(new InvoiceRow()
+                {
+                    InvoiceRowQuantity = 1,
+                    InvoiceRowProduct = Product,
+                    InvoiceRowPrice= Product.ProductPrice
+                });
+        } else {
+            curRow.InvoiceRowQuantity += 1;
+            curRow.InvoiceRowPrice = Product.ProductPrice * curRow.InvoiceRowQuantity;
+        }
 
     }
+    private void SubProduct(MouseEventArgs e, int ProductID) {
+        //_context = DbFactory.CreateDbContext();
+        var Product = _context.Products
+                .Find(ProductID);
+
+        var curRow = Order
+                    .Where(ord => ord.InvoiceRowProduct == Product)
+                    .FirstOrDefault();
+
+        if (curRow != null) {
+            curRow.InvoiceRowQuantity -= 1;
+
+            if (curRow.InvoiceRowQuantity <1)
+                Order.Remove(curRow);
+
+
+            curRow.InvoiceRowPrice = Product.ProductPrice * curRow.InvoiceRowQuantity;
+        }
+
+    }
+
     private void SubTotal() { }
 
-    private void IncrementCount()
-    {
-        currentCount++;
-    }
 }
