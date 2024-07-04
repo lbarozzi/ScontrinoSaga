@@ -4,6 +4,7 @@ namespace ScontrinoSaga.Data {
     public record class Product {
         public int ProductID { get; set; }
         public string ProductDescription { get; set; }
+        public double ProductPrice { get; set; }
         public double ProductVat { get; set; }
         public bool IsAvaialable { get; set; }
 
@@ -23,7 +24,7 @@ namespace ScontrinoSaga.Data {
     public record  class InvoiceRow {
         public int InvoiceRowID { get; set; }
         public Invoice ParentInvoice { get; set; }
-        public Product InvoicRowProducts { get; set; }
+        public Product InvoiceRowProduct { get; set; }
         public int InvoiceRowQuantity { get; set; }
         public int InvoiceRowPrice { get; set; }
 

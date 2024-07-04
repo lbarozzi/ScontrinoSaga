@@ -11,7 +11,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
 
-builder.Services.AddDbContext<AppDBContext>(opt=>opt.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+builder.Services.AddDbContextFactory<AppDBContext>(opt=>opt.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 var app = builder.Build();
 

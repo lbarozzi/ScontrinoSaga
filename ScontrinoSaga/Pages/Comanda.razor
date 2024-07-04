@@ -1,8 +1,33 @@
 ﻿@page "/Comanda"
 
+@inject IDbContextFactory<AppDBContext> DbFactory
+
 <PageTitle>Comanda</PageTitle>
 
 <h1>@(DateTime.Now.ToShortDateString() ): Comanda</h1>
+
+@if (Products != null ) {
+    <h3>Products</h3>
+    @foreach (var p in Products){
+        <div class="card">
+            <div class="card-body">
+               <button class="btn btn-primary" @onclick="(args)=> AddProduct(args, p.ProductID)">AddProduct: @p.ProductDescription</button>
+            </div>
+        </div>
+    } 
+}
+
+@if (Order != null ) {
+    <h3>Order</h3>
+    @foreach (var p in Order){
+        @p
+    }
+}
+
+
+
+
+<button class="btn btn-primary" @onclick="SubTotal">SubTotal</button>
 
 <p role="status">Current count: @currentCount</p>
 
@@ -10,6 +35,45 @@
 
 @code {
     private int currentCount = 0;
+    private int subTotal = 0;
+    private AppDBContext _context;
+    private IEnumerable<Product> Products;
+    private List<InvoiceRow> Order;
+
+    protected override async Task OnInitializedAsync() {
+        _context = DbFactory.CreateDbContext();
+        Products = _context.Products
+                .Where(p => p.IsAvaialable)
+                .ToList();
+
+        this.Order = new List<InvoiceRow>();
+
+        foreach (var p in Products)
+        {
+            var tmp = new InvoiceRow()  {
+                    InvoiceRowQuantity = 0,
+                    InvoiceRowProduct = p
+                };
+
+            Order.Append(tmp);
+        }
+        currentCount = 0;
+
+    }
+
+    private void AddProduct(MouseEventArgs e,int ProductID) {
+        _context = DbFactory.CreateDbContext();
+        var Product = _context.Products
+                .Find(ProductID);
+
+       
+        this.Order.Add(new InvoiceRow() {
+                InvoiceRowQuantity = 1,
+            InvoiceRowProduct = Product
+        });
+
+    }
+    private void SubTotal() { }
 
     private void IncrementCount()
     {
