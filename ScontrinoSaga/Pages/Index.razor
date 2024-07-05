@@ -1,9 +1,41 @@
 ﻿@page "/"
+@inject IDbContextFactory<AppDBContext> DbFactory
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Saga.Net </h1>
+@foreach (var inv in Invoices) {
+    <div class="card">
+        <div class="card-header">
+            @inv.InvoiceDate.ToShortDateString() @@ @inv.InvoiceDate.ToShortTimeString()  <b> @String.Format("TOT: {0:F2}", inv.InvoiceGrandTotal)</b>
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+            @foreach(var o in inv.InvoiceRows) {
+                <div class="list-group-item">
+                    @o.InvoiceRowQuantity
+                    &nbsp;
+                    @o.InvoiceRowProduct.ProductDescription
+                    </div>
+            }
+            </div>
+        </div>
+    </div>
+}
 
-Welcome to your new app.
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code {
+    private AppDBContext _context;
+    private IEnumerable<Product> Products;
+    private List<Invoice> Invoices;
+    Printer lpt;
+
+    protected override async Task OnInitializedAsync() {
+        _context = DbFactory.CreateDbContext();
+        Invoices = _context.Invoices
+                    .OrderByDescending(inv=>inv.InvoiceDate)
+                    .Include(inv=>inv.InvoiceRows)
+                    .ThenInclude(inv=>inv.InvoiceRowProduct)
+                    .ToList();
+    }
+}

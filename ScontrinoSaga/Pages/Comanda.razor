@@ -19,6 +19,7 @@
 }
 <hr />
 
+
 @if (Order != null ) {
     <h3>Order</h3>
     @foreach (var p in Order){
@@ -36,34 +37,49 @@
 }
 
 <hr />
-
-<button class="btn btn-primary" @onclick="SubTotal">Conferma Ordine</button>
+<div class="">
+    <b>@string.Format("Totale Provisorio: {0:F2}", @subTotal)</b>
+</div>
+<hr />
+<button class="btn btn-primary" @onclick="PrintTotal">Conferma Ordine</button>
 
 @code {
-    private int subTotal = 0;
+    private double subTotal = 0;
     private AppDBContext _context;
     private IEnumerable<Product> Products;
     private List<InvoiceRow> Order;
+    Printer lpt;
 
     protected override async Task OnInitializedAsync() {
         _context = DbFactory.CreateDbContext();
+
+        this.lpt = new Printer("ExcelVan", "utf-8");
+
+
         Products = _context.Products
                 .Where(p => p.IsAvaialable)
                 .ToList();
 
-        this.Order = new List<InvoiceRow>();
-
-        foreach (var p in Products)
-        {
-            var tmp = new InvoiceRow()  {
-                    InvoiceRowQuantity = 0,
-                    InvoiceRowProduct = p
-                };
-
-            Order.Append(tmp);
-        }
         //currentCount = 0;
+        this.CleanOrder();
+    }
+    private void CleanOrder() {
+        subTotal = 0d;
+        this.Order = new List<InvoiceRow>();
+        /*
+        foreach (var p in Products) {
+        var tmp = new InvoiceRow() {
+        InvoiceRowQuantity = 0,
+        InvoiceRowProduct = p
+        };
 
+        Order.Append(tmp);
+    }
+    //*/
+    }
+
+    private void SubTotal() {
+        subTotal = Order.Sum(iv => iv.InvoiceRowPrice);
     }
 
     private void AddProduct(MouseEventArgs e,int ProductID) {
@@ -86,7 +102,7 @@
             curRow.InvoiceRowQuantity += 1;
             curRow.InvoiceRowPrice = Product.ProductPrice * curRow.InvoiceRowQuantity;
         }
-
+        SubTotal();
     }
     private void SubProduct(MouseEventArgs e, int ProductID) {
         //_context = DbFactory.CreateDbContext();
@@ -106,9 +122,62 @@
 
             curRow.InvoiceRowPrice = Product.ProductPrice * curRow.InvoiceRowQuantity;
         }
-
+        SubTotal();
     }
 
-    private void SubTotal() { }
+
+    private void SaveOrder() {
+        var curInvoice = new Invoice();
+        var trans= _context.Database.BeginTransaction();
+        _context.Invoices.Add(curInvoice);
+        _context.SaveChanges();
+        foreach(var r in Order) {
+            r.ParentInvoice = curInvoice;
+        }
+        curInvoice.InvoiceRows.AddRange(Order);
+        curInvoice.InvoiceGrandTotal = (decimal)Order.Sum(o => o.InvoiceRowPrice) ;
+        _context.SaveChanges();
+        //_context.Database.CommitTransaction();
+        trans.Commit();    }
+
+    private void PrintTotal() {
+
+        SaveOrder();
+
+        if(File.Exists("logo.png")) {
+            System.Drawing.Bitmap png = new System.Drawing.Bitmap("logo.png");
+            lpt.Image(png);
+        }
+        if(File.Exists("Head.txt")) {
+            string head = File.ReadAllText("Head.txt");
+            lpt.Append(head);
+        }
+
+        lpt.NewLines(2);
+        double tot = 0.0d;
+        foreach(var o in Order) {
+            lpt.Append(string.Format("{0,3:D2}x({2,-5:F2} Euro): {1,-15}  {3,6:F2} Euro ", o.InvoiceRowQuantity, o.InvoiceRowProduct.ProductDescription,
+                        o.InvoiceRowProduct.ProductPrice, o.InvoiceRowPrice) );
+            tot += o.InvoiceRowPrice;
+        }
+        lpt.NewLines(2);
+        //Grand Total
+        lpt.Append("===========================================");
+        lpt.DoubleWidth2();
+        lpt.Append(string.Format("TOTALE: {0,10:F2} Euro", tot));
+        lpt.NormalWidth();
+        lpt.Append("===========================================");
+
+        if (File.Exists("Tail.txt")) {
+            string tail = File.ReadAllText("Tail.txt");
+            lpt.Append(tail);
+        }
+        lpt.NewLines(2);
+
+        lpt.FullPaperCut();
+        lpt.PrintDocument();
+
+        CleanOrder();
+    }
 
 }

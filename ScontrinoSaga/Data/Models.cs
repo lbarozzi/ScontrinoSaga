@@ -16,9 +16,17 @@ namespace ScontrinoSaga.Data {
 
     public record class Invoice {
         public int InvoiceId { get; set; }
+        public string InvoiceGUID { get; set; }
+        public DateTime InvoiceDate { get; set; }
         public List<InvoiceRow> InvoiceRows { get; set; }
 
         public decimal InvoiceGrandTotal { get; set; }
+
+        public Invoice() {
+            this.InvoiceDate = DateTime.Now;
+            this.InvoiceGUID= Guid.NewGuid().ToString();
+            this.InvoiceRows = new List<InvoiceRow>();
+        }
     }
 
     public record  class InvoiceRow {
@@ -36,7 +44,7 @@ namespace ScontrinoSaga.Data {
         }
 
         public DbSet<Product> Products { get; set; }
-        public DbSet<Invoice> Invoice { get; set; }
+        public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceRow> InvoicesRows { get; set; }
     }
 }
