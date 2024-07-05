@@ -20,7 +20,7 @@ namespace ScontrinoSaga.Data {
         public DateTime InvoiceDate { get; set; }
         public List<InvoiceRow> InvoiceRows { get; set; }
 
-        public decimal InvoiceGrandTotal { get; set; }
+        public double InvoiceGrandTotal { get; set; }
 
         public Invoice() {
             this.InvoiceDate = DateTime.Now;

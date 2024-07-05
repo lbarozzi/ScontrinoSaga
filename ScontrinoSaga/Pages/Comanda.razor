@@ -135,10 +135,11 @@
             r.ParentInvoice = curInvoice;
         }
         curInvoice.InvoiceRows.AddRange(Order);
-        curInvoice.InvoiceGrandTotal = (decimal)Order.Sum(o => o.InvoiceRowPrice) ;
+        curInvoice.InvoiceGrandTotal = (double)Order.Sum(o => o.InvoiceRowPrice) ;
         _context.SaveChanges();
         //_context.Database.CommitTransaction();
-        trans.Commit();    }
+        trans.Commit();
+    }
 
     private void PrintTotal() {
 

@@ -4,6 +4,19 @@
 <PageTitle>Index</PageTitle>
 
 <h1>Saga.Net </h1>
+
+<div class="">
+    @String.Format("Totale: {0:F2}", @TotInvoices) &euro;
+
+</div>
+<div class="list-group">
+    @foreach (var pl_k in TotProduct.Keys) {
+        <div class="list-group-item">
+            @String.Format("{0} : {1:F2}", pl_k, TotProduct[pl_k]) &euro;
+        </div>
+    }
+</div>
+<hr />
 @foreach (var inv in Invoices) {
     <div class="card">
         <div class="card-header">
@@ -28,7 +41,8 @@
     private AppDBContext _context;
     private IEnumerable<Product> Products;
     private List<Invoice> Invoices;
-    Printer lpt;
+    private decimal TotInvoices;
+    private Dictionary<string, decimal> TotProduct;
 
     protected override async Task OnInitializedAsync() {
         _context = DbFactory.CreateDbContext();
@@ -37,5 +51,13 @@
                     .Include(inv=>inv.InvoiceRows)
                     .ThenInclude(inv=>inv.InvoiceRowProduct)
                     .ToList();
+        TotInvoices = (decimal)_context.Invoices.Sum(o => o.InvoiceGrandTotal);
+        TotProduct = new Dictionary<string, decimal>();
+        foreach (var p in _context.Products.Where(p => p.IsAvaialable)) {
+            TotProduct[p.ProductDescription] = (decimal)_context.InvoicesRows
+                                                    .Where(ir => ir.InvoiceRowProduct == p)
+                                                    .Sum(p => p.InvoiceRowPrice);
+
+        }
     }
 }
