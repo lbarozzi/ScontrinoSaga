@@ -6,8 +6,9 @@
 <h1>Saga.Net </h1>
 
 <div class="">
-    @String.Format("Totale: {0:F2}", @TotInvoices) &euro;
-
+    <b>
+    @String.Format("Totale Odierno: {0:F2} / Totale: {1:F2}", @TotInvoices,@TotFull) &euro;
+    </b>
 </div>
 <div class="list-group">
     @foreach (var pl_k in TotProduct.Keys) {
@@ -42,20 +43,31 @@
     private IEnumerable<Product> Products;
     private List<Invoice> Invoices;
     private decimal TotInvoices;
+    private decimal TotFull;
     private Dictionary<string, decimal> TotProduct;
 
     protected override async Task OnInitializedAsync() {
         _context = DbFactory.CreateDbContext();
         Invoices = _context.Invoices
                     .OrderByDescending(inv=>inv.InvoiceDate)
+                    .Where(inv => inv.InvoiceDate.Date == DateTime.Now.Date)
                     .Include(inv=>inv.InvoiceRows)
                     .ThenInclude(inv=>inv.InvoiceRowProduct)
                     .ToList();
-        TotInvoices = (decimal)_context.Invoices.Sum(o => o.InvoiceGrandTotal);
+        TotInvoices = (decimal)_context.Invoices
+                                .Where(inv=>inv.InvoiceDate.Date==DateTime.Now.Date )
+                                .Sum(o => o.InvoiceGrandTotal);
+
+        TotFull = (decimal)_context.Invoices
+                                //.Where(inv => inv.InvoiceDate.Date<DateTime.Now.Date)
+                                .Sum(o => o.InvoiceGrandTotal);
+
         TotProduct = new Dictionary<string, decimal>();
         foreach (var p in _context.Products.Where(p => p.IsAvaialable)) {
             TotProduct[p.ProductDescription] = (decimal)_context.InvoicesRows
                                                     .Where(ir => ir.InvoiceRowProduct == p)
+                                                    .Include(p=>p.ParentInvoice)
+                                                    .Where(ir=> ir.ParentInvoice.InvoiceDate.Date ==DateTime.Now.Date)
                                                     .Sum(p => p.InvoiceRowPrice);
 
         }
