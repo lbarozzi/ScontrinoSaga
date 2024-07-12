@@ -1,6 +1,7 @@
 ﻿@page "/Comanda"
 
 @inject IDbContextFactory<AppDBContext> DbFactory
+@inject SagaConfig cfg
 
 <PageTitle>Comanda</PageTitle>
 
@@ -146,13 +147,17 @@
 
         SaveOrder();
 
-        if(File.Exists("logo.png")) {
-            System.Drawing.Bitmap png = new System.Drawing.Bitmap("logo.png");
+        if(File.Exists(cfg.LogoFile)) {
+            System.Drawing.Bitmap png = new System.Drawing.Bitmap(cfg.LogoFile);
             lpt.Image(png);
+        } else {
+            Console.WriteLine("Not found {0}",cfg.LogoFile);
         }
-        if(File.Exists("Head.txt")) {
-            string head = File.ReadAllText("Head.txt");
+        if(File.Exists(cfg.HeaderFile)) {
+            string head = File.ReadAllText(cfg.HeaderFile);
             lpt.Append(head);
+        }  else {
+            Console.WriteLine("Not found {0}",cfg.HeaderFile);
         }
 
         lpt.NewLines(2);
@@ -170,9 +175,11 @@
         lpt.NormalWidth();
         lpt.Append("================================");
 
-        if (File.Exists("Tail.txt")) {
-            string tail = File.ReadAllText("Tail.txt");
+        if (File.Exists(cfg.TailFile)) {
+            string tail = File.ReadAllText(cfg.TailFile);
             lpt.Append(tail);
+        }else {
+            Console.WriteLine("Not found {0}",cfg.TailFile);
         }
         lpt.NewLines(2);
 

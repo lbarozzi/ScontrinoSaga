@@ -3,13 +3,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Sqlite;
 using Microsoft.AspNetCore.Components.Web;
 using ScontrinoSaga.Data;
+using ScontrinoSaga;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton<WeatherForecastService>();
+
+//builder.Services.AddSingleton<WeatherForecastService>();
+SagaConfig cfg = builder.Configuration.GetSection("Saga").Get<SagaConfig>() ?? new SagaConfig();
+
+builder.Services.AddSingleton(cfg);
 
 builder.Services.AddDbContextFactory<AppDBContext>(opt=>opt.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
