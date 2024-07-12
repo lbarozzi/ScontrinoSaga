@@ -162,16 +162,17 @@
 
         lpt.NewLines(2);
         double tot = 0.0d;
+        char Euro = 'E';
         foreach(var o in Order) {
-            lpt.Append(string.Format("{0,1:D2}x {1,-10}  {3,4:F2} 0x5d", o.InvoiceRowQuantity, o.InvoiceRowProduct.ProductDescription,
-                        o.InvoiceRowProduct.ProductPrice, o.InvoiceRowPrice) );
+            lpt.Append(string.Format("{0,1:D2}x {1,-10}  {3,4:F2} {4}", o.InvoiceRowQuantity, o.InvoiceRowProduct.ProductDescription,
+                        o.InvoiceRowProduct.ProductPrice, o.InvoiceRowPrice,Euro) );
             tot += o.InvoiceRowPrice;
         }
         lpt.NewLines(2);
         //Grand Total
         lpt.Append("================================");
         lpt.DoubleWidth2();
-        lpt.Append(string.Format("TOTALE: {0,5:F2} 0x5d", tot));
+        lpt.Append(string.Format("TOTALE: {0,5:F2} {1}", tot, Euro));
         lpt.NormalWidth();
         lpt.Append("================================");
 
