@@ -146,7 +146,8 @@
     private void PrintTotal() {
 
         SaveOrder();
-
+        var path = cfg.WorkingPath;
+        
         if(File.Exists(cfg.LogoFile)) {
             System.Drawing.Bitmap png = new System.Drawing.Bitmap(cfg.LogoFile);
             lpt.Image(png);

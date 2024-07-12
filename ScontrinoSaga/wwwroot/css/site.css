@@ -64,13 +64,13 @@ a, .btn-link {
     }
 
 .prdlogo {
-    width: 64px !important;
+    width: 54px !important;
     height: 64px !important;
 }
 
 .btn-prod {
     padding: 2px 2px 2px 2px;
     width: 256px !important;
-    height: 64px !important;
+    height: 84px !important;
     color:navy;
 }
