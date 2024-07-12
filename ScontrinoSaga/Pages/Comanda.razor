@@ -12,8 +12,8 @@
     @foreach (var p in Products){
         <div class="card">
             <div class="card-body">
-               <button class="btn btn-primary" @onclick="(args)=> AddProduct(args, p.ProductID)">AddProduct: @p.ProductDescription</button>
-                <button class="btn btn-danger" @onclick="(args)=> SubProduct(args, p.ProductID)">SubProduct: @p.ProductDescription</button>
+                <button class="btn btn-primary btn-prod" @onclick="(args)=> AddProduct(args, p.ProductID)"><img class="prdlogo" src="@p.ProductIcon" height="64px" width="64px"/><br />@p.ProductDescription</button>
+                <button class="btn btn-danger btn-prod" height="64px" @onclick="(args)=> SubProduct(args, p.ProductID)"><img class="prdlogo" src="@p.ProductIcon" height="64px" width="64px" /><br />@p.ProductDescription</button>
             </div>
         </div>
     } 
@@ -55,7 +55,7 @@
         _context = DbFactory.CreateDbContext();
 
         // this.lpt = new Printer("ExcelVan", "utf-8");
-        this.lpt = new Printer("POS-58", "utf-8");
+        this.lpt = new Printer(cfg.PrinterName, "utf-8");
 
 
         Products = _context.Products

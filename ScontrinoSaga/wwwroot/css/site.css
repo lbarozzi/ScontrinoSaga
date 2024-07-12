@@ -62,3 +62,15 @@ a, .btn-link {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+
+.prdlogo {
+    width: 64px !important;
+    height: 64px !important;
+}
+
+.btn-prod {
+    padding: 2px 2px 2px 2px;
+    width: 256px !important;
+    height: 64px !important;
+    color:navy;
+}
