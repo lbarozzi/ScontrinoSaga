@@ -2,6 +2,7 @@
 
 @inject IDbContextFactory<AppDBContext> DbFactory
 @inject SagaConfig cfg
+@using SkiaSharp
 
 <PageTitle>Comanda</PageTitle>
 
@@ -42,7 +43,7 @@
     <b>@string.Format("Totale Provisorio: {0:F2}", @subTotal)</b>
 </div>
 <hr />
-<button class="btn btn-primary" @onclick="PrintTotal">Conferma Ordine</button>
+<button class="btn btn-primary" @onclick="PrintTotalAsSvg">Conferma Ordine</button>
 
 @code {
     private double subTotal = 0;
@@ -56,6 +57,8 @@
 
         // this.lpt = new Printer("ExcelVan", "utf-8");
         this.lpt = new Printer(cfg.PrinterName, "utf-8");
+        byte len =50;
+        lpt.SetLineHeight(len); //400 dots ~ 50mm
 
 
         Products = _context.Products
@@ -143,13 +146,112 @@
         trans.Commit();
     }
 
+    private void PrintTotalAsSvg()
+    {
+        SaveOrder();
+        
+        // Crea SVG usando SkiaSharp
+        using (var surface = SKSurface.Create(new SKImageInfo(384, 800))) // Larghezza standard per stampante termica
+        {
+            var canvas = surface.Canvas;
+            canvas.Clear(SKColors.White);
+
+            // Configura il testo
+            using (var paint = new SKPaint
+            {
+                Color = SKColors.Black,
+                TextSize = 12,
+                IsAntialias = true,
+                TextAlign = SKTextAlign.Left
+            })
+            {
+                float yPos = 20;
+                
+                // Logo (se presente)
+                if (File.Exists(cfg.LogoFile))
+                {
+                    using (var bitmap = SKBitmap.Decode(cfg.LogoFile))
+                    {
+                        canvas.DrawBitmap(bitmap, 10, yPos);
+                        yPos += bitmap.Height + 10;
+                    }
+                }
+
+                // Intestazione
+                if (File.Exists(cfg.HeaderFile))
+                {
+                    string head = File.ReadAllText(cfg.HeaderFile);
+                    canvas.DrawText(head, 10, yPos, paint);
+                    yPos += 30;
+                }
+
+                // Righe ordine
+                foreach (var o in Order)
+                {
+                    string line = string.Format("{0,1:D2}x {1,-10}  {2,4:F2} €",
+                        o.InvoiceRowQuantity,
+                        o.InvoiceRowProduct.ProductDescription,
+                        o.InvoiceRowPrice);
+                    canvas.DrawText(line, 10, yPos, paint);
+                    yPos += 20;
+                }
+
+                // Totale
+                double tot = Order.Sum(o => o.InvoiceRowPrice);
+                yPos += 10;
+                canvas.DrawLine(10, yPos, 374, yPos, paint);
+                yPos += 20;
+                
+                // Totale in grassetto e più grande
+                paint.TextSize = 16;
+                // paint.IsBold = true;
+                string totalLine = string.Format("TOTALE: {0:F2} €", tot);
+                canvas.DrawText(totalLine, 10, yPos, paint);
+
+                // Piè di pagina
+                if (File.Exists(cfg.TailFile))
+                {
+                    yPos += 30;
+                    paint.TextSize = 12;
+                    // paint.IsBold = false;
+                    string tail = File.ReadAllText(cfg.TailFile);
+                    canvas.DrawText(tail, 10, yPos, paint);
+                }
+            }
+
+            // Converti in bitmap
+            using (var image = surface.Snapshot())
+            using (var data = image.Encode(SKEncodedImageFormat.Png, 100))
+            {
+                var tempFile = Path.Combine(Path.GetTempPath(), "receipt.png");
+                using (var stream = File.OpenWrite(tempFile))
+                {
+                    data.SaveTo(stream);
+                }
+                
+                // Stampa l'immagine
+                var bitmap = new System.Drawing.Bitmap(tempFile);
+                lpt.Image(bitmap);
+                lpt.FullPaperCut();
+                lpt.PrintDocument();
+                
+                // Pulisci
+                bitmap.Dispose();
+                Task.Delay(1000).Wait();
+                // File.Delete(tempFile);
+            }
+        }
+
+        CleanOrder();
+    }
+
     private void PrintTotal() {
 
         SaveOrder();
         var path = cfg.WorkingPath;
         
         if(File.Exists(cfg.LogoFile)) {
-            System.Drawing.Bitmap png = new System.Drawing.Bitmap(cfg.LogoFile);
+            var png = new System.Drawing.Bitmap(System.Drawing.Bitmap.FromFile( cfg.LogoFile) );
             lpt.Image(png);
         } else {
             Console.WriteLine("Not found {0}",cfg.LogoFile);
