@@ -1,0 +1,38 @@
+@page "/image/{fileName}"
+@using System.IO
+@inject IWebHostEnvironment Environment
+@using Microsoft.AspNetCore.Components
+
+<h3>Visualizza Immagine</h3>
+
+@if (!string.IsNullOrEmpty(ImagePath))
+{
+    <img src="@ImagePath" alt="Example Image" />
+}
+else
+{
+    <p>Immagine non trovata.</p>
+}
+
+@code {
+    [Parameter]
+    public string? FileName { get; set; }
+
+    private string? ImagePath;
+
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrEmpty(FileName))
+        {
+            var imagePath = Path.Combine(Environment.WebRootPath, "images", FileName);
+            if (File.Exists(imagePath))
+            {
+                ImagePath = $"/images/{FileName}";
+            }
+            else
+            {
+                ImagePath = null;
+            }
+        }
+    }
+}

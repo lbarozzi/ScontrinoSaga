@@ -2,7 +2,10 @@
 
 @inject IDbContextFactory<AppDBContext> DbFactory
 @inject SagaConfig cfg
-@using SkiaSharp
+@inject IWebHostEnvironment Environment
+@using ESCPOS_NET
+@using ESCPOS_NET.Emitters;
+
 
 <PageTitle>Comanda</PageTitle>
 
@@ -13,8 +16,14 @@
     @foreach (var p in Products){
         <div class="card">
             <div class="card-body">
-                <button class="btn btn-primary btn-prod" @onclick="(args)=> AddProduct(args, p.ProductID)"><img class="prdlogo" src="@p.ProductIcon" height="64px" width="64px"/><br />@p.ProductDescription</button>
-                <button class="btn btn-danger btn-prod" height="64px" @onclick="(args)=> SubProduct(args, p.ProductID)"><img class="prdlogo" src="@p.ProductIcon" height="64px" width="64px" /><br />@p.ProductDescription</button>
+                <button class="btn btn-primary btn-prod" @onclick="(args)=> AddProduct(args, p.ProductID)">
+                    <img class="prdlogo" src="@p.ProductIcon" height="64px" width="64px"/>
+                    <br />@p.ProductDescription
+                </button>
+                <button class="btn btn-danger btn-prod" height="64px" @onclick="(args)=> SubProduct(args, p.ProductID)">
+                    <img class="prdlogo" src="@p.ProductIcon" height="64px" width="64px" />
+                    <br />@p.ProductDescription
+                </button>
             </div>
         </div>
     } 
@@ -80,22 +89,33 @@
     <b>@string.Format("Totale Provisorio: {0:F2}", @subTotal)</b>
 </div>
 <hr />
-<button class="btn btn-primary" @onclick="PrintTotalAsSvg">Conferma Ordine</button>
-
+@if (ImageCurrent != "") {
+    <div class="nav-item px-3">
+        <NavLink class="nav-link" href="@ImageCurrent" Match="NavLinkMatch.All">
+            <span class="oi oi-image" aria-hidden="true"></span> Visualizza Immagine
+        </NavLink>
+    </div>
+} else { 
+    <button class="btn btn-primary" @onclick="PrintTotalAsSvg">Conferma Ordine</button>
+}
 @code {
     private double subTotal = 0;
     private AppDBContext _context;
     private IEnumerable<Product> Products;
     private List<InvoiceRow> Order;
-    Printer lpt;
+    //Printer lpt;
+    public string ImageCurrent { get; set; } = "";
+
+    // FilePrinter lpt; 
     public bool IsPrinting = false;
 
     protected override async Task OnInitializedAsync() {
         _context = DbFactory.CreateDbContext();
 
         // this.lpt = new Printer("ExcelVan", "utf-8");
-        this.lpt = new Printer(cfg.PrinterName, "0"); //"utf-8");
-
+        // this.lpt = new Printer(cfg.PrinterName, "0"); //"utf-8");
+        // this.lpt = new SerialPrinter(cfg.PrinterName,baudRate:115200);
+        // this.lpt = new FilePrinter(cfg.PrinterName);
 
         Products = _context.Products
                 .Where(p => p.IsAvaialable)
@@ -109,14 +129,14 @@
         this.Order = new List<InvoiceRow>();
         /*
         foreach (var p in Products) {
-        var tmp = new InvoiceRow() {
-        InvoiceRowQuantity = 0,
-        InvoiceRowProduct = p
-        };
+            var tmp = new InvoiceRow() {
+            InvoiceRowQuantity = 0,
+            InvoiceRowProduct = p
+            };
 
-        Order.Append(tmp);
-    }
-    //*/
+            Order.Append(tmp);
+        }
+        //*/
     }
 
     private void SubTotal() {
@@ -185,107 +205,69 @@
     private void PrintTotalAsSvg()
     {
         SaveOrder();
-        
-        // Crea SVG usando SkiaSharp
-        using (var surface = SKSurface.Create(new SKImageInfo(384, 800))) // Larghezza standard per stampante termica
+
+        // Crea il contenuto SVG
+        var svgContent = new System.Text.StringBuilder();
+        svgContent.AppendLine("<svg width='384' height='800' xmlns='http://www.w3.org/2000/svg'>");
+        svgContent.AppendLine("<rect width='100%' height='100%' fill='white'/>");
+
+        float yPos = 20;
+
+        // Logo (se presente)
+        if (File.Exists(cfg.LogoFile))
         {
-            var canvas = surface.Canvas;
-            canvas.Clear(SKColors.White);
-
-            // Configura il testo
-            using (var paint = new SKPaint
-            {
-                Color = SKColors.Black,
-                TextSize = 12,
-                IsAntialias = true,
-                TextAlign = SKTextAlign.Left
-            })
-            {
-                float yPos = 20;
-                
-                // Logo (se presente)
-                if (File.Exists(cfg.LogoFile))
-                {
-                    using (var bitmap = SKBitmap.Decode(cfg.LogoFile))
-                    {
-                        canvas.DrawBitmap(bitmap, 10, yPos);
-                        yPos += bitmap.Height + 10;
-                    }
-                }
-
-                // Intestazione
-                if (File.Exists(cfg.HeaderFile))
-                {
-                    string head = File.ReadAllText(cfg.HeaderFile);
-                    canvas.DrawText(head, 10, yPos, paint);
-                    yPos += 30;
-                }
-
-                // Righe ordine
-                foreach (var o in Order)
-                {
-                    string line = string.Format("{0,1:D2}x {1,-10}  {2,4:F2} €",
-                        o.InvoiceRowQuantity,
-                        o.InvoiceRowProduct.ProductDescription,
-                        o.InvoiceRowPrice);
-                    canvas.DrawText(line, 10, yPos, paint);
-                    yPos += 20;
-                }
-
-                // Totale
-                double tot = Order.Sum(o => o.InvoiceRowPrice);
-                yPos += 10;
-                canvas.DrawLine(10, yPos, 374, yPos, paint);
-                yPos += 20;
-                
-                // Totale in grassetto e più grande
-                paint.TextSize = 16;
-                // paint.IsBold = true;
-                string totalLine = string.Format("TOTALE: {0:F2} €", tot);
-                canvas.DrawText(totalLine, 10, yPos, paint);
-
-                // Piè di pagina
-                if (File.Exists(cfg.TailFile))
-                {
-                    yPos += 30;
-                    paint.TextSize = 12;
-                    // paint.IsBold = false;
-                    string tail = File.ReadAllText(cfg.TailFile);
-                    canvas.DrawText(tail, 10, yPos, paint);
-                }
-            }
-
-            // Converti in bitmap
-            using (var image = surface.Snapshot())
-            using (var data = image.Encode(SKEncodedImageFormat.Png, 100))
-            {
-                var tempFile = Path.Combine(Path.GetTempPath(), "receipt.png");
-                using (var stream = File.OpenWrite(tempFile))
-                {
-                    data.SaveTo(stream);
-                }
-                
-                // Stampa l'immagine
-                var bitmap = new System.Drawing.Bitmap(tempFile);
-                lpt.Image(bitmap);
-                lpt.FullPaperCut();
-                lpt.PrintDocument();
-                
-                // Pulisci
-                bitmap.Dispose();
-                Task.Delay(1000).Wait();
-                // File.Delete(tempFile);
-            }
+            var logoData = Convert.ToBase64String(File.ReadAllBytes(cfg.LogoFile));
+            svgContent.AppendLine($"<image href='data:image/png;base64,{logoData}' x='10' y='{yPos}' width='100' height='100'/>");
+            yPos += 110;
         }
+
+        // Intestazione
+        if (File.Exists(cfg.HeaderFile))
+        {
+            string head = File.ReadAllText(cfg.HeaderFile);
+            svgContent.AppendLine($"<text x='10' y='{yPos}' font-size='12' fill='black'>{head}</text>");
+            yPos += 30;
+        }
+
+        // Righe ordine
+        foreach (var o in Order)
+        {
+            string line = $"{o.InvoiceRowQuantity}x {o.InvoiceRowProduct.ProductDescription}  {o.InvoiceRowPrice:F2} €";
+            svgContent.AppendLine($"<text x='10' y='{yPos}' font-size='12' fill='black'>{line}</text>");
+            yPos += 20;
+        }
+
+        // Totale
+        double tot = Order.Sum(o => o.InvoiceRowPrice);
+        yPos += 10;
+        svgContent.AppendLine($"<line x1='10' y1='{yPos}' x2='374' y2='{yPos}' stroke='black'/>");
+        yPos += 20;
+
+        // Totale in grassetto e più grande
+        svgContent.AppendLine($"<text x='10' y='{yPos}' font-size='16' fill='black'>TOTALE: {tot:F2} €</text>");
+
+        // Piè di pagina
+        if (File.Exists(cfg.TailFile))
+        {
+            yPos += 30;
+            string tail = File.ReadAllText(cfg.TailFile);
+            svgContent.AppendLine($"<text x='10' y='{yPos}' font-size='12' fill='black'>{tail}</text>");
+        }
+
+        svgContent.AppendLine("</svg>");
+
+        // Salva il contenuto SVG in un file
+        var fname = $"{Guid.NewGuid().ToString()}.svg";
+        this.ImageCurrent = $"/images/{fname}";
+        var tempFile = Path.Combine(Environment.WebRootPath, "images", fname);
+        File.WriteAllText(tempFile, svgContent.ToString());
 
         CleanOrder();
     }
-
+    /*// OLD CODE
     private void PrintTotal() {
 
-
         IsPrinting= true;
-
 
         return ;
 
@@ -337,5 +319,6 @@
 
         CleanOrder();
     }
+    //*/
 
 }
