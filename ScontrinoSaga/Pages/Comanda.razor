@@ -20,6 +20,43 @@
     } 
 }
 <hr />
+<!-- Print stylesheet -->
+<style>
+    .print: {
+        display: block; 
+        width:58mm !important; 
+        padding-left: 1mm; 
+        padding-right: 1mm; ; 
+    }
+</style>
+
+<div  id="printer" class="modal print"  >
+    <div class="modal-dialog">
+    <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Modal Header</h4>
+            </div>
+            <div class="modal-body">
+                <img src="logo.png"  class="print" /> 
+                @foreach (var p in Order){
+                    <div class="print">
+                        @p.InvoiceRowQuantity X @p.InvoiceRowProduct.ProductDescription @p.InvoiceRowProduct.ProductPrice &euro;
+                        <!--
+                        <div class="card-body justify-content-end">
+                            @p.InvoiceRowPrice &euro;
+                        </div>
+                        -->
+                    </div>
+                }
+                <div class="print">
+                    <b>@string.Format("Totale: {0:F2}", @subTotal)</b>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 @if (Order != null ) {
@@ -51,12 +88,13 @@
     private IEnumerable<Product> Products;
     private List<InvoiceRow> Order;
     Printer lpt;
+    public bool IsPrinting = false;
 
     protected override async Task OnInitializedAsync() {
         _context = DbFactory.CreateDbContext();
 
         // this.lpt = new Printer("ExcelVan", "utf-8");
-        this.lpt = new Printer(cfg.PrinterName, "PC858"); //"utf-8");
+        this.lpt = new Printer(cfg.PrinterName, "0"); //"utf-8");
 
 
         Products = _context.Products
@@ -244,6 +282,12 @@
     }
 
     private void PrintTotal() {
+
+
+        IsPrinting= true;
+
+
+        return ;
 
         SaveOrder();
 
