@@ -21,7 +21,9 @@
 @foreach (var inv in Invoices) {
     <div class="card">
         <div class="card-header">
+            <a href="@string.Format("/image/{0}",inv.InvoiceGUID)">
             @inv.InvoiceDate.ToShortDateString() @@ @inv.InvoiceDate.ToShortTimeString()  <b> @String.Format("TOT: {0:F2}", inv.InvoiceGrandTotal)</b>
+            </a>
         </div>
         <div class="card-body">
             <div class="list-group">

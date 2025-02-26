@@ -1,6 +1,7 @@
 ﻿@page "/Comanda"
 
 @inject IDbContextFactory<AppDBContext> DbFactory
+@inject NavigationManager Navigation
 @inject SagaConfig cfg
 @inject IWebHostEnvironment Environment
 @using ESCPOS_NET
@@ -91,7 +92,7 @@
 <hr />
 @if (ImageCurrent != "") {
     <div class="nav-item px-3">
-        <NavLink class="nav-link" href="@ImageCurrent" Match="NavLinkMatch.All">
+        <NavLink class="nav-link" href="@string.Format("/images/{0}",@ImageCurrent)" >
             <span class="oi oi-image" aria-hidden="true"></span> Visualizza Immagine
         </NavLink>
     </div>
@@ -192,6 +193,9 @@
         var trans= _context.Database.BeginTransaction();
         _context.Invoices.Add(curInvoice);
         _context.SaveChanges();
+        //Name
+        this.ImageCurrent = $"{curInvoice.InvoiceGUID}";
+        //Order
         foreach(var r in Order) {
             r.ParentInvoice = curInvoice;
         }
@@ -208,7 +212,7 @@
 
         // Crea il contenuto SVG
         var svgContent = new System.Text.StringBuilder();
-        svgContent.AppendLine("<svg width='384' height='800' xmlns='http://www.w3.org/2000/svg'>");
+        svgContent.AppendLine("<svg width='58mm' height='800' xmlns='http://www.w3.org/2000/svg'>");
         svgContent.AppendLine("<rect width='100%' height='100%' fill='white'/>");
 
         float yPos = 20;
@@ -257,12 +261,11 @@
         svgContent.AppendLine("</svg>");
 
         // Salva il contenuto SVG in un file
-        var fname = $"{Guid.NewGuid().ToString()}.svg";
-        this.ImageCurrent = $"/images/{fname}";
-        var tempFile = Path.Combine(Environment.WebRootPath, "images", fname);
+        var tempFile = Path.Combine(Environment.WebRootPath, $"images/{this.ImageCurrent}.svg");
         File.WriteAllText(tempFile, svgContent.ToString());
 
         CleanOrder();
+        Navigation.NavigateTo($"image/{this.ImageCurrent}");
     }
     /*// OLD CODE
     private void PrintTotal() {
