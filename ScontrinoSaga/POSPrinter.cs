@@ -121,15 +121,18 @@ public class POSPrinter{
         char Euro = 'E'; //Convert.ToChar(0xD5); //'E'; //&euro;
         
         foreach(var o in Order) {
-            lpt.Append(string.Format("{0,1:D2}x {1,-10}  {3,4:F2} {4}", o.InvoiceRowQuantity, o.InvoiceRowProduct.ProductDescription,
+            lpt.Append(string.Format("{0,1:D2}x {1,-10}          {3,-4:F2} {4}", o.InvoiceRowQuantity, o.InvoiceRowProduct.ProductDescription,
                         o.InvoiceRowProduct.ProductPrice, o.InvoiceRowPrice,Euro) );
             tot += o.InvoiceRowPrice;
         }
         lpt.NewLines(2);
+
         //Grand Total
+        lpt.Append("");
         lpt.Append("================================");
         lpt.DoubleWidth2();
-        lpt.Append(string.Format("TOTALE: {0,5:F2} {1}", tot, Euro));
+        lpt.Append(string.Format("TOTALE: {0,-5:F2} {1}", tot, Euro));
+        lpt.Append("");
         lpt.NormalWidth();
         lpt.Append("================================");
 
