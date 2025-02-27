@@ -1,0 +1,175 @@
+@page "/Products"
+@inject IDbContextFactory<AppDBContext> DbFactory
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Gestione Prodotti</PageTitle>
+
+<h1>Gestione Prodotti</h1>
+
+<button class="btn btn-primary" @onclick="CreateNewProduct">Nuovo Prodotto</button>
+
+@if (products == null)
+{
+    <p>Caricamento...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Icona</th>
+                <th>Descrizione</th>
+                <th>Prezzo</th>
+                <th>Disponibile</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var product in products)
+            {
+                <tr>
+                    <td>@product.ProductID</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(product.ProductIcon))
+                        {
+                            <img src="@product.ProductIcon" class="product-icon" />
+                        }
+                    </td>
+                    <td>
+                        @if (editingProduct?.ProductID == product.ProductID)
+                        {
+                            <input @bind="editingProduct.ProductDescription" class="form-control" />
+                        }
+                        else
+                        {
+                            @product.ProductDescription
+                        }
+                    </td>
+                    <td>
+                        @if (editingProduct?.ProductID == product.ProductID)
+                        {
+                            <input @bind="editingProduct.ProductPrice" class="form-control" type="number" step="0.01" />
+                        }
+                        else
+                        {
+                            @product.ProductPrice.ToString("C2")
+                        }
+                    </td>
+                    <td>
+                        @if (editingProduct?.ProductID == product.ProductID)
+                        {
+                            <input @bind="editingProduct.IsAvaialable" type="checkbox" />
+                        }
+                        else
+                        {
+                            <input type="checkbox" checked="@product.IsAvaialable" disabled />
+                        }
+                    </td>
+                    <td>
+                        @if (editingProduct?.ProductID == product.ProductID)
+                        {
+                            <button class="btn btn-success" @onclick="SaveProduct">Salva</button>
+                            <button class="btn btn-secondary" @onclick="CancelEdit">Annulla</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary" @onclick="() => EditProduct(product)">Modifica</button>
+                            <button class="btn btn-danger" @onclick="() => DeleteProduct(product)">Elimina</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<style>
+    .product-icon {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+    }
+</style>
+
+@code {
+    private List<Product> products;
+    private Product editingProduct;
+    private AppDBContext _context;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _context = DbFactory.CreateDbContext();
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        products = await _context.Products.ToListAsync();
+    }
+
+    private void CreateNewProduct()
+    {
+        editingProduct = new Product
+        {
+            ProductDescription = "",
+            ProductPrice = 0,
+            IsAvaialable = true
+        };
+        products.Add(editingProduct);
+    }
+
+    private void EditProduct(Product product)
+    {
+        editingProduct = new Product
+        {
+            ProductID = product.ProductID,
+            ProductDescription = product.ProductDescription,
+            ProductPrice = product.ProductPrice,
+            ProductIcon = product.ProductIcon,
+            IsAvaialable = product.IsAvaialable
+        };
+    }
+
+    private async Task SaveProduct()
+    {
+        if (editingProduct.ProductID == 0)
+        {
+            _context.Products.Add(editingProduct);
+        }
+        else
+        {
+            var product = await _context.Products.FindAsync(editingProduct.ProductID);
+            if (product != null)
+            {
+                product.ProductDescription = editingProduct.ProductDescription;
+                product.ProductPrice = editingProduct.ProductPrice;
+                product.IsAvaialable = editingProduct.IsAvaialable;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        editingProduct = null;
+        await LoadProducts();
+    }
+
+    private void CancelEdit()
+    {
+        if (editingProduct.ProductID == 0)
+        {
+            products.Remove(editingProduct);
+        }
+        editingProduct = null;
+    }
+
+    private async Task DeleteProduct(Product product)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", new object[] { "Sei sicuro di voler eliminare questo prodotto?" }))
+        {
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+            await LoadProducts();
+        }
+    }
+}

@@ -5,22 +5,23 @@
 @inject SagaConfig cfg
 @inject IWebHostEnvironment Environment
 
+
 <PageTitle>Comanda</PageTitle>
 
 <h1>@(DateTime.Now.ToShortDateString() ): Comanda</h1>
 
 @if (Products != null ) {
     <h3>Prodotti</h3>
-    <div class="cad-container">
+    <div class="card-container">
     @foreach (var p in Products){
         <div class="card">
             <div class="card-body">
-                <button class="btn btn-primary btn-prod" @onclick="(args)=> AddProduct(args, p.ProductID)">
-                    <img class="prdlogo" src="@p.ProductIcon" height="32px" width="32px"/>
+                <button class="" @onclick="(args)=> AddProduct(args, p.ProductID)">
+                    <img class="prdlogo" src="@p.ProductIcon" />
                     <br />@p.ProductDescription
                 </button>
-                <button class="btn btn-danger btn-prod"  @onclick="(args)=> SubProduct(args, p.ProductID)">
-                    <img class="prdlogo" src="@p.ProductIcon" height="32px" width="32px" />
+                <button class="bg-danger" @onclick="(args)=> SubProduct(args, p.ProductID)">
+                    <img class="prdlogo" src="@p.ProductIcon" />
                     <br />@p.ProductDescription
                 </button>
             </div>
@@ -29,45 +30,6 @@
     </div>
 }
 <hr />
-<!-- Print stylesheet -->
-<style>
-    .print: {
-        display: block; 
-        width:58mm !important; 
-        padding-left: 1mm; 
-        padding-right: 1mm; ; 
-    }
-</style>
-
-<div  id="printer" class="modal print"  >
-    <div class="modal-dialog">
-    <!-- Modal content-->
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">Modal Header</h4>
-            </div>
-            <div class="modal-body">
-                <img src="logo.png"  class="print" /> 
-                @foreach (var p in Order){
-                    <div class="print">
-                        @p.InvoiceRowQuantity X @p.InvoiceRowProduct.ProductDescription @p.InvoiceRowProduct.ProductPrice &euro;
-                        <!--
-                        <div class="card-body justify-content-end">
-                            @p.InvoiceRowPrice &euro;
-                        </div>
-                        -->
-                    </div>
-                }
-                <div class="print">
-                    <b>@string.Format("Totale: {0:F2}", @subTotal)</b>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
 @if (Order != null ) {
     <h3>Order</h3>
     @foreach (var p in Order){
