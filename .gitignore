@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+ScontrinoSaga/invoices.sqlite-shm
+ScontrinoSaga/invoices.sqlite-wal
