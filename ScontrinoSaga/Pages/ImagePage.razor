@@ -36,6 +36,7 @@
         
         SVG= PrintSvg();
     }
+
     protected string PrintSvg(){
         // Crea il contenuto SVG
         var svgContent = new System.Text.StringBuilder();
@@ -99,6 +100,7 @@
         {
             await JSRuntime.InvokeVoidAsync("printSvg");
         }
+        Navigation.NavigateTo("/");
     }
     /*/
     protected override void OnParametersSet()
