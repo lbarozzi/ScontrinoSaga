@@ -11,6 +11,7 @@
     <div class="svg-container" >
     @((MarkupString)SVG)
     </div>
+     <button class="btn btn-primary" @onclick="PrintTotal">Stampa</button>
 }
 
 
@@ -21,8 +22,8 @@
     private AppDBContext _context;
     private List<InvoiceRow> Order= new List<InvoiceRow>();
     private Invoice? invoice;
-    public int y=160;
 
+    private POSPrinter lpt;
     private string SVG { get; set; } = string.Empty;
     protected override async Task OnInitializedAsync() {
         _context = DbFactory.CreateDbContext();
@@ -34,71 +35,16 @@
         
         Order = (invoice !=null)? invoice.InvoiceRows.ToList() : new List<InvoiceRow>();
         
-        SVG= PrintSvg();
+        lpt=new POSPrinter(cfg);
+        SVG= lpt.PrintSvg(Order);
     }
 
-    protected string PrintSvg(){
-        // Crea il contenuto SVG
-        var svgContent = new System.Text.StringBuilder();
-        //svgContent.AppendLine("<svg width='58mm' height='800' xmlns='http://www.w3.org/2000/svg'>");
-        svgContent.AppendLine("<rect width='100%' height='100%' fill='white'/>");
-
-        float yPos = 20;
-
-        // Logo (se presente)
-        if (File.Exists(cfg.LogoFile))
-        {
-            var logoData = Convert.ToBase64String(File.ReadAllBytes(cfg.LogoFile));
-            svgContent.AppendLine($"<image href='data:image/png;base64,{logoData}' x='10' y='{yPos}' width='100' height='100'/>");
-            //svgContent.AppendLine($"<image href='/images/{cfg.LogoFile})' x='10' y='20' width='100' height='100'/>");
-            yPos += 110;
-        }
-
-        // Intestazione
-        if (File.Exists(cfg.HeaderFile))
-        {
-            string head = File.ReadAllText(cfg.HeaderFile);
-            svgContent.AppendLine($"<text x='10' y='{yPos}' font-size='12' fill='black'>{head}</text>");
-            yPos += 30;
-        }
-
-        // Righe ordine
-        foreach (var o in Order)
-        {
-            string line = $"{o.InvoiceRowQuantity:D02}x {o.InvoiceRowProduct.ProductDescription}";
-            //  {o.InvoiceRowPrice:C2}";
-            svgContent.AppendLine($"<text x='10' y='{yPos}' font-size='12' fill='black'>{line}</text>");
-            line= $"{o.InvoiceRowPrice:C2}";
-            svgContent.AppendLine($"<text x='150' y='{yPos}' font-size='12' fill='black'>{line}</text>");
-            yPos += 20;
-        }
-
-        // Totale
-        double tot = Order.Sum(o => o.InvoiceRowPrice);
-        yPos += 10;
-        svgContent.AppendLine($"<line x1='10' y1='{yPos}' x2='150' y2='{yPos}' stroke='black'/>");
-        yPos += 20;
-
-        // Totale in grassetto e più grande
-        svgContent.AppendLine($"<text x='10' y='{yPos}' font-size='16' fill='black'>TOTALE:</text>");
-        svgContent.AppendLine($"<text x='140' y='{yPos}' font-size='16' fill='black'>{tot:C2}</text>");
-
-        // Piè di pagina
-        if (File.Exists(cfg.TailFile))
-        {
-            yPos += 30;
-            string tail = File.ReadAllText(cfg.TailFile);
-            svgContent.AppendLine($"<text x='10' y='{yPos}' font-size='12' fill='black'>{tail}</text>");
-        }
-
-        return $"<svg width='58mm' height='{yPos+40}' xmlns='http://www.w3.org/2000/svg' id='printableSvg'>{svgContent.ToString()}</svg>";
-    }
-
+    
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !string.IsNullOrEmpty(Id))
         {
-            await JSRuntime.InvokeVoidAsync("printSvg");
+            //await JSRuntime.InvokeVoidAsync("printSvg");
         }
         Navigation.NavigateTo("/");
     }
@@ -119,4 +65,8 @@
         }
     }
     //*/
+    protected void PrintTotal()
+    {
+        lpt.PrintTotal(Order);
+    }
 }   

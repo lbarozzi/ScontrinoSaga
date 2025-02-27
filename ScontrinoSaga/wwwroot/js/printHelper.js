@@ -23,5 +23,7 @@ window.printSvg = function () {
     document.body.innerHTML = originalContent;
     
     // Riattivare Blazor dopo il ripristino (necessario per i gestori di eventi)
+    console.log('Reconnecting Blazor...');
     Blazor.reconnect();
+    console.log('Blazor reconnected');
 };
