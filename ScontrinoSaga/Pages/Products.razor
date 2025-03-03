@@ -1,7 +1,10 @@
 @page "/Products"
+@using System.IO
 @inject IDbContextFactory<AppDBContext> DbFactory
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject IWebHostEnvironment Environment
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>Gestione Prodotti</PageTitle>
 
@@ -32,7 +35,21 @@ else
                 <tr>
                     <td>@product.ProductID</td>
                     <td>
-                        @if (!string.IsNullOrEmpty(product.ProductIcon))
+                        @if (editingProduct?.ProductID == product.ProductID)
+                        {
+                            <div>
+                                @if (!string.IsNullOrEmpty(tempIconPath))
+                                {
+                                    <img src="@tempIconPath" class="product-icon mb-2" />
+                                }
+                                else if (!string.IsNullOrEmpty(product.ProductIcon))
+                                {
+                                    <img src="@product.ProductIcon" class="product-icon mb-2" />
+                                }
+                                <InputFile OnChange="HandleFileSelected" accept="image/*" class="form-control" />
+                            </div>
+                        }
+                        else if (!string.IsNullOrEmpty(product.ProductIcon))
                         {
                             <img src="@product.ProductIcon" class="product-icon" />
                         }
@@ -97,6 +114,8 @@ else
     private List<Product> products;
     private Product editingProduct;
     private AppDBContext _context;
+    private string tempIconPath;
+    private IBrowserFile uploadedFile;
 
     protected override async Task OnInitializedAsync()
     {
@@ -118,6 +137,8 @@ else
             IsAvaialable = true
         };
         products.Add(editingProduct);
+        tempIconPath = null;
+        uploadedFile = null;
     }
 
     private void EditProduct(Product product)
@@ -130,10 +151,53 @@ else
             ProductIcon = product.ProductIcon,
             IsAvaialable = product.IsAvaialable
         };
+        tempIconPath = null;
+        uploadedFile = null;
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        uploadedFile = e.File;
+        
+        // Mostra anteprima dell'immagine
+        if (uploadedFile != null)
+        {
+            var format = "image/png";
+            var resizedImageFile = await uploadedFile.RequestImageFileAsync(format, 100, 100);
+            var buffer = new byte[resizedImageFile.Size];
+            await resizedImageFile.OpenReadStream().ReadAsync(buffer);
+            var imageBase64 = Convert.ToBase64String(buffer);
+            tempIconPath = $"data:{format};base64,{imageBase64}";
+        }
     }
 
     private async Task SaveProduct()
     {
+        // Salva l'immagine caricata se presente
+        if (uploadedFile != null)
+        {
+            var extension = Path.GetExtension(uploadedFile.Name);
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var folderPath = Path.Combine(Environment.WebRootPath, "images", "products");
+            
+            // Assicurati che la cartella esista
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+            
+            var filePath = Path.Combine(folderPath, fileName);
+            
+            using (var stream = uploadedFile.OpenReadStream())
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await stream.CopyToAsync(fileStream);
+            }
+            
+            // Aggiorna il percorso dell'icona
+            editingProduct.ProductIcon = $"/images/products/{fileName}";
+        }
+
         if (editingProduct.ProductID == 0)
         {
             _context.Products.Add(editingProduct);
@@ -146,11 +210,19 @@ else
                 product.ProductDescription = editingProduct.ProductDescription;
                 product.ProductPrice = editingProduct.ProductPrice;
                 product.IsAvaialable = editingProduct.IsAvaialable;
+                
+                // Aggiorna solo se è stata caricata una nuova icona
+                if (!string.IsNullOrEmpty(editingProduct.ProductIcon) && editingProduct.ProductIcon != product.ProductIcon)
+                {
+                    product.ProductIcon = editingProduct.ProductIcon;
+                }
             }
         }
 
         await _context.SaveChangesAsync();
         editingProduct = null;
+        tempIconPath = null;
+        uploadedFile = null;
         await LoadProducts();
     }
 
@@ -161,12 +233,24 @@ else
             products.Remove(editingProduct);
         }
         editingProduct = null;
+        tempIconPath = null;
+        uploadedFile = null;
     }
 
     private async Task DeleteProduct(Product product)
     {
         if (await JSRuntime.InvokeAsync<bool>("confirm", new object[] { "Sei sicuro di voler eliminare questo prodotto?" }))
         {
+            // Opzionalmente, puoi anche eliminare il file immagine associato
+            if (!string.IsNullOrEmpty(product.ProductIcon))
+            {
+                var imagePath = Path.Combine(Environment.WebRootPath, product.ProductIcon.TrimStart('/'));
+                if (File.Exists(imagePath))
+                {
+                    File.Delete(imagePath);
+                }
+            }
+            
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
             await LoadProducts();
