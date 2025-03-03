@@ -16,13 +16,13 @@
     @foreach (var p in Products){
         <div class="card">
             <div class="card-body">
-                <button class="" @onclick="(args)=> AddProduct(args, p.ProductID)">
+                <button class="bg-success" @onclick="(args)=> AddProduct(args, p.ProductID)">
                     <img class="prdlogo" src="@p.ProductIcon" />
-                    <br />@p.ProductDescription
+                    <br />@p.ProductDescription +
                 </button>
                 <button class="bg-danger" @onclick="(args)=> SubProduct(args, p.ProductID)">
                     <img class="prdlogo" src="@p.ProductIcon" />
-                    <br />@p.ProductDescription
+                    <br />@p.ProductDescription -
                 </button>
             </div>
         </div>
