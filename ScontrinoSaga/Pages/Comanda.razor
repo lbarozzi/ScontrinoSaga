@@ -53,8 +53,11 @@
 <hr />
 @if (ImageCurrent != "") {
     <div class="nav-item px-3">
-        <NavLink class="nav-link" href="@string.Format("/images/{0}",@ImageCurrent)" >
-            <span class="oi oi-image" aria-hidden="true"></span> Visualizza Immagine
+        <NavLink class="nav-link" href="@string.Format("/image/{0}",@ImageCurrent)" >
+            
+            <button>
+                <span class="oi oi-image" aria-hidden="true">Scontrino Precedente</span>
+            </button>
         </NavLink>
     </div>
 } else { 
@@ -173,6 +176,7 @@
             SaveOrder();
             this.lpt.PrintTotal(Order);
         }
+        this.CleanOrder();
     }    
 
 }
