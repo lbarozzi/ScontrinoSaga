@@ -5,6 +5,12 @@
 
 <h1>Saga.Net </h1>
 
+<div>
+    <label for="reportDate">Seleziona Data:</label>
+    <InputDate id="reportDate" @bind-Value="selectedDate" class="form-control" />
+    <button class="btn btn-primary" @onclick="LoadData">Carica Report</button>
+</div>
+
 <div class="">
     <b>
     @String.Format("Totale Odierno: {0:F2} / Totale: {1:F2}", @TotInvoices,@TotFull) &euro;
@@ -47,21 +53,25 @@
     private decimal TotInvoices;
     private decimal TotFull;
     private Dictionary<string, decimal> TotProduct;
+    private DateTime selectedDate = DateTime.Now;
 
     protected override async Task OnInitializedAsync() {
+        await LoadData();
+    }
+    protected async Task LoadData() {
         _context = DbFactory.CreateDbContext();
         Invoices = _context.Invoices
                     .OrderByDescending(inv=>inv.InvoiceDate)
-                    .Where(inv => inv.InvoiceDate.Date == DateTime.Now.Date)
+                    .Where(inv => inv.InvoiceDate.Date == selectedDate.Date)
                     .Include(inv=>inv.InvoiceRows)
                     .ThenInclude(inv=>inv.InvoiceRowProduct)
                     .ToList();
         TotInvoices = (decimal)_context.Invoices
-                                .Where(inv=>inv.InvoiceDate.Date==DateTime.Now.Date )
+                                .Where(inv=>inv.InvoiceDate.Date==selectedDate.Date )
                                 .Sum(o => o.InvoiceGrandTotal);
 
         TotFull = (decimal)_context.Invoices
-                                //.Where(inv => inv.InvoiceDate.Date<DateTime.Now.Date)
+                                //.Where(inv => inv.InvoiceDate.Date<selectedDate.Date)
                                 .Sum(o => o.InvoiceGrandTotal);
 
         TotProduct = new Dictionary<string, decimal>();
@@ -69,7 +79,7 @@
             TotProduct[p.ProductDescription] = (decimal)_context.InvoicesRows
                                                     .Where(ir => ir.InvoiceRowProduct == p)
                                                     .Include(p=>p.ParentInvoice)
-                                                    .Where(ir=> ir.ParentInvoice.InvoiceDate.Date ==DateTime.Now.Date)
+                                                    .Where(ir=> ir.ParentInvoice.InvoiceDate.Date ==selectedDate.Date)
                                                     .Sum(p => p.InvoiceRowPrice);
 
         }
