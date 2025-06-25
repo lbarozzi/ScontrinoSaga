@@ -84,10 +84,11 @@
                                                     .Include(p=>p.ParentInvoice)
                                                     .Where(ir=> ir.ParentInvoice.InvoiceDate.Date ==selectedDate.Date)
                                                     .Sum(p => p.InvoiceRowPrice);
+
             TotQuantity[p.ProductDescription] = (decimal)_context.InvoicesRows
                                                     .Where(ir => ir.InvoiceRowProduct == p)
                                                     .Include(p => p.ParentInvoice)
-                                                    .Where(ir => ir.ParentInvoice.InvoiceDate.Date == DateTime.Now.Date)
+                                                    .Where(ir => ir.ParentInvoice.InvoiceDate.Date == selectedDate.Date)
                                                     .Sum(p => p.InvoiceRowQuantity);
         }
     }
