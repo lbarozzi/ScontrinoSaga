@@ -93,6 +93,7 @@
     private void CleanOrder() {
         subTotal = 0d;
         this.Order = new List<InvoiceRow>();
+        this.ImageCurrent = "";
         /*
         foreach (var p in Products) {
             var tmp = new InvoiceRow() {
@@ -172,9 +173,13 @@
     }
 
     protected void PrintTotal() {
-        if (Order.Count > 0) {
-            SaveOrder();
-            this.lpt.PrintTotal(Order);
+        try {
+            if (Order.Count > 0) {
+                SaveOrder();
+                this.lpt.PrintTotal(Order);
+            }
+        } catch (Exception ex) {
+            Console.WriteLine(ex.Message);
         }
         this.CleanOrder();
     }    
